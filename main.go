@@ -77,7 +77,19 @@ func main() {
 				return
 			}
 		}
+
+		_, exists := deployments.Load(deployment.ID)
+		if exists {
+			c.JSON(409, Error{
+				Message: "Deployment already found with this ID",
+				Code:    5,
+			})
+			return
+		}
+
 		deployments.Store(deployment.ID, deployment)
+
+		c.JSON(201, deployment)
 	})
 
 	r.GET("/deployments/:id", func(c *gin.Context) {
@@ -93,6 +105,23 @@ func main() {
 		}
 
 		c.JSON(200, d)
+	})
+
+	r.DELETE("/deployments/:id", func(c *gin.Context) {
+		id := c.Param("id")
+
+		_, exists := deployments.Load(id)
+		if !exists {
+			c.JSON(404, Error{
+				Message: "Deployment not found",
+				Code:    5,
+			})
+			return
+		}
+
+		deployments.Delete(id)
+
+		c.JSON(202, nil)
 	})
 
 	r.Run()
