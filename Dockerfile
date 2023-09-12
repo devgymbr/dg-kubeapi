@@ -5,7 +5,7 @@ COPY go.mod go.sum ./
 COPY . . 
 RUN go build -o kube main.go
 
-FROM alpine:3 as binary
+FROM scratch as binary
 COPY --from=base /src/devgym/kube .
 EXPOSE 8080
 CMD ["./kube"]
