@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"regexp"
 	"sync"
 
@@ -36,7 +37,7 @@ func main() {
 		c.BindJSON(&deployment)
 
 		if deployment.ID == uuid.Nil {
-			c.JSON(400, Error{
+			c.JSON(http.StatusBadRequest, Error{
 				Message: "ID must be specified",
 				Code:    6,
 			})
@@ -44,7 +45,7 @@ func main() {
 		}
 
 		if deployment.Replicas == 0 {
-			c.JSON(400, Error{
+			c.JSON(http.StatusBadRequest, Error{
 				Message: "Replicas must be greater than 0",
 				Code:    1,
 			})
@@ -53,7 +54,7 @@ func main() {
 
 		nameMatch, _ := regexp.MatchString(`^[a-zA-Z0-9_]+$`, deployment.Image)
 		if !nameMatch {
-			c.JSON(400, Error{
+			c.JSON(http.StatusBadRequest, Error{
 				Message: "Image name must be alphanumeric",
 				Code:    2,
 			})
@@ -61,7 +62,7 @@ func main() {
 		}
 
 		if len(deployment.Ports) == 0 {
-			c.JSON(400, Error{
+			c.JSON(http.StatusBadRequest, Error{
 				Message: "Ports must be specified",
 				Code:    3,
 			})
@@ -70,7 +71,7 @@ func main() {
 
 		for _, port := range deployment.Ports {
 			if port.Number > uint(65535) {
-				c.JSON(400, Error{
+				c.JSON(http.StatusBadRequest, Error{
 					Message: "Port number must be less than 65535",
 					Code:    4,
 				})
@@ -78,18 +79,18 @@ func main() {
 			}
 		}
 
-		_, exists := deployments.Load(deployment.ID)
+		_, exists := deployments.Load(deployment.ID.String())
 		if exists {
-			c.JSON(409, Error{
+			c.JSON(http.StatusConflict, Error{
 				Message: "Deployment already found with this ID",
 				Code:    5,
 			})
 			return
 		}
 
-		deployments.Store(deployment.ID, deployment)
+		deployments.Store(deployment.ID.String(), deployment)
 
-		c.JSON(201, deployment)
+		c.JSON(http.StatusCreated, deployment)
 	})
 
 	r.GET("/deployments/:id", func(c *gin.Context) {
@@ -97,7 +98,7 @@ func main() {
 
 		d, exists := deployments.Load(id)
 		if !exists {
-			c.JSON(404, Error{
+			c.JSON(http.StatusNotFound, Error{
 				Message: "Deployment not found",
 				Code:    5,
 			})
@@ -112,7 +113,7 @@ func main() {
 
 		_, exists := deployments.Load(id)
 		if !exists {
-			c.JSON(404, Error{
+			c.JSON(http.StatusNotFound, Error{
 				Message: "Deployment not found",
 				Code:    5,
 			})
@@ -121,7 +122,7 @@ func main() {
 
 		deployments.Delete(id)
 
-		c.JSON(202, nil)
+		c.Status(http.StatusNoContent)
 	})
 
 	r.Run()
