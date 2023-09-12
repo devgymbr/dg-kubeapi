@@ -1,5 +1,4 @@
 FROM golang:1.21.1 as base
-RUN apk update 
 WORKDIR /src/devgym
 COPY go.mod go.sum ./
 COPY . . 
