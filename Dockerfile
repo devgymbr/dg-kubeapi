@@ -1,4 +1,4 @@
-FROM golang:1.21.0-alpine3.18 as base
+FROM golang:1.21.0 as base
 RUN apk update 
 WORKDIR /src/devgym
 COPY go.mod go.sum ./
