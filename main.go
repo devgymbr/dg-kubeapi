@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"regexp"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -18,6 +19,7 @@ type Deployment struct {
 	Image    string            `json:"image"`
 	Name     string            `json:"name"`
 	Ports    []Port            `json:"ports"`
+	CreateAt time.Time         `json:"createAt"`
 }
 
 type Port struct {
@@ -113,7 +115,7 @@ func main() {
 			return
 		}
 
-		c.JSON(http.StatusCreated, d)
+		c.JSON(http.StatusOK, d)
 	})
 
 	r.DELETE("/deployments/:id", func(c *gin.Context) {
