@@ -28,8 +28,9 @@ type Port struct {
 }
 
 type Error struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+	Message string              `json:"message"`
+	Code    int                 `json:"code"`
+	Extras  map[string][]string `json:"extras",omitempty`
 }
 
 func main() {
@@ -38,39 +39,30 @@ func main() {
 		var deployment Deployment
 		c.ShouldBindJSON(&deployment)
 
+		fails := []string{}
 		if deployment.ID == uuid.Nil {
-			c.Writer.Header().Set("Content-Type", "application/json")
-			c.JSON(http.StatusBadRequest, Error{
-				Message: "ID must be specified",
-				Code:    6,
-			})
-			return
+			fails = append(fails, "id")
 		}
 
 		if deployment.Replicas == 0 {
-			c.Writer.Header().Set("Content-Type", "application/json")
-			c.JSON(http.StatusBadRequest, Error{
-				Message: "Replicas must be greater than 0",
-				Code:    1,
-			})
-			return
+			fails = append(fails, "replicas")
 		}
 
 		nameMatch, _ := regexp.MatchString(`^[a-zA-Z0-9_]+$`, deployment.Image)
 		if !nameMatch {
-			c.Writer.Header().Set("Content-Type", "application/json")
-			c.JSON(http.StatusBadRequest, Error{
-				Message: "Image name must be alphanumeric",
-				Code:    2,
-			})
-			return
+			fails = append(fails, "image")
 		}
 
 		if len(deployment.Ports) == 0 {
+			fails = append(fails, "ports")
+		}
+
+		if len(fails) > 0 {
 			c.Writer.Header().Set("Content-Type", "application/json")
 			c.JSON(http.StatusBadRequest, Error{
-				Message: "Ports must be specified",
-				Code:    3,
+				Message: "required field is missing",
+				Code:    1032,
+				Extras:  map[string][]string{"failed_fields": fails},
 			})
 			return
 		}
@@ -80,7 +72,7 @@ func main() {
 				c.Writer.Header().Set("Content-Type", "application/json")
 				c.JSON(http.StatusBadRequest, Error{
 					Message: "Port number must be between 1 and 65535",
-					Code:    4,
+					Code:    3020,
 				})
 				return
 			}
@@ -91,7 +83,7 @@ func main() {
 			c.Writer.Header().Set("Content-Type", "application/json")
 			c.JSON(http.StatusConflict, Error{
 				Message: "Deployment already found with this ID",
-				Code:    5,
+				Code:    5000,
 			})
 			return
 		}
